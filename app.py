@@ -3,17 +3,20 @@ import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image
-from keras.models import load_model
-from keras.preprocessing.image import img_to_array
 import tensorflow as tf
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import img_to_array
 
 app = Flask(__name__)
 CORS(app)
 
-# Load the model
-model = load_model('plant_disease_model.h5')
+# Load model once globally
+try:
+    model = load_model('plant_disease_model.h5')  # Ensure this file is uploaded in Render
+except Exception as e:
+    raise RuntimeError(f"Failed to load model: {str(e)}")
 
-# Manually set your class labels (ensure this matches the order in training!)
+# Labels (ensure these match training order)
 class_labels = ['Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot',
  'Corn_(maize)___Common_rust_',
  'Corn_(maize)___Northern_Leaf_Blight',
@@ -37,23 +40,26 @@ class_labels = ['Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot',
  'Tomato___healthy']
 
 def preprocess_image(image_bytes):
-    image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-    image = image.resize((128, 128))
-    image_array = img_to_array(image) / 255.0
-    image_array = np.expand_dims(image_array, axis=0)
-    return image_array
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+        image = image.resize((128, 128))
+        image_array = img_to_array(image) / 255.0
+        image_array = np.expand_dims(image_array, axis=0)
+        return image_array
+    except Exception as e:
+        raise ValueError(f"Image preprocessing failed: {e}")
 
 @app.route('/', methods=['GET'])
 def home():
-    return 'Plant Disease Prediction API is working.'
+    return '✅ Plant Disease Prediction API is live.'
 
 @app.route('/predict', methods=['POST'])
 def predict():
     if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
+        return jsonify({'error': 'No file uploaded'}), 400
 
-    file = request.files['file']
     try:
+        file = request.files['file']
         image_bytes = file.read()
         processed_image = preprocess_image(image_bytes)
 
@@ -64,11 +70,11 @@ def predict():
 
         return jsonify({
             'prediction': predicted_label,
-            'confidence': f'{confidence:.2f}'
+            'confidence': f"{confidence:.2f}"
         })
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': f'Prediction failed: {str(e)}'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False, host='0.0.0.0', port=5000)
