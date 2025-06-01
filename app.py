@@ -11,7 +11,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Load the model
-model = load_model('model.h5')
+model = load_model('plant_disease_model.h5')
 
 # Manually set your class labels (ensure this matches the order in training!)
 class_labels = ['Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot',
