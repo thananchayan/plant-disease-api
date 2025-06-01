@@ -38,6 +38,8 @@ class_names = ['Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot',
 def home():
     return "Plant Disease Detection API is running!"
 
+import io
+
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
@@ -48,7 +50,8 @@ def predict():
         if file.filename == '':
             return jsonify({'error': 'No selected file'}), 400
 
-        img = image.load_img(file, target_size=(128, 128))
+        # ✅ Read the file as BytesIO
+        img = image.load_img(io.BytesIO(file.read()), target_size=(128, 128))
         img_array = image.img_to_array(img) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
 
@@ -62,7 +65,7 @@ def predict():
         })
 
     except Exception as e:
-        print(f"[ERROR] {str(e)}")  # Log to console
+        print(f"[ERROR] {str(e)}")
         return jsonify({'error': 'Internal server error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
